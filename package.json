@@ -1,6 +1,6 @@
 {
   "name": "three-stl-net-loader",
-  "version": "1.0.6",
+  "version": "1.0.0",
   "description": "@aleeper's three.js stl-loader as a node module, with request header and credentials support",
   "main": "index.js",
   "scripts": {
@@ -17,10 +17,16 @@
     "net",
     "loader"
   ],
-  "author": "data-doge <eugene@enspiral.com> (http://fuckafucka.com)",
+  "contributors": [
+    "data-doge <eugene@enspiral.com> (http://fuckafucka.com)",
+    "penneydude (https://www.nckpnny.com)"
+  ],
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/penneydude/three-stl-net-loader/issues"
   },
-  "homepage": "https://github.com/penneydude/three-stl-net-loader#readme"
+  "homepage": "https://github.com/penneydude/three-stl-net-loader#readme",
+  "peerDependencies": {
+    "three": ">= 0.85.0"
+  }
 }
