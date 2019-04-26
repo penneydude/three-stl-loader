@@ -1,25 +1,26 @@
 {
-  "name": "three-stl-loader",
+  "name": "three-stl-net-loader",
   "version": "1.0.6",
-  "description": "@aleeper's three.js stl-loader as a node module",
+  "description": "@aleeper's three.js stl-loader as a node module, with request header and credentials support",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/enspiral-cherubi/three-stl-loader.git"
+    "url": "git+https://github.com/penneydude/three-stl-net-loader.git"
   },
   "keywords": [
     "three",
     "threejs",
     "stl",
+    "net",
     "loader"
   ],
   "author": "data-doge <eugene@enspiral.com> (http://fuckafucka.com)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/enspiral-cherubi/three-stl-loader/issues"
+    "url": "https://github.com/penneydude/three-stl-net-loader/issues"
   },
-  "homepage": "https://github.com/enspiral-cherubi/three-stl-loader#readme"
+  "homepage": "https://github.com/penneydude/three-stl-net-loader#readme"
 }
