@@ -1,6 +1,6 @@
 {
   "name": "three-stl-net-loader",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "@aleeper's three.js stl-loader as a node module, with request header and credentials support",
   "main": "index.js",
   "scripts": {
