@@ -12,8 +12,8 @@
 
 ```js
 
-var THREE = require('three')
-var STLLoader = require('three-stl-net-loader')(THREE)
+import * as THREE from 'three';
+import STLLoader from 'three-stl-net-loader';
 
 var loader = new STLLoader()
 

@@ -27,6 +27,6 @@
   },
   "homepage": "https://github.com/penneydude/three-stl-net-loader#readme",
   "peerDependencies": {
-    "three": ">= 0.85.0"
+    "three": ">= 0.101.0"
   }
 }

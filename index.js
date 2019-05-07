@@ -16,93 +16,126 @@
  *  ASCII decoding assumes file is UTF-8.
  *
  * Usage:
- *  var loader = new THREE.STLLoader();
+ *  var loader = new STLLoader();
  *  loader.load( './models/stl/slotted_disk.stl', function ( geometry ) {
- *    scene.add( new THREE.Mesh( geometry ) );
+ *    scene.add( new Mesh( geometry ) );
  *  });
  *
  * For binary STLs geometry might contain colors for vertices. To use it:
  *  // use the same code to load STL as above
  *  if (geometry.hasColors) {
- *    material = new THREE.MeshPhongMaterial({ opacity: geometry.alpha, vertexColors: THREE.VertexColors });
+ *    material = new MeshPhongMaterial({ opacity: geometry.alpha, vertexColors: VertexColors });
  *  } else { .... }
- *  var mesh = new THREE.Mesh( geometry, material );
+ *  var mesh = new Mesh( geometry, material );
  */
 
-module.exports = function(THREE) {
-  var STLLoader = function(manager) {
-    this.manager =
-      manager !== undefined ? manager : THREE.DefaultLoadingManager;
-  };
+import {
+  BufferAttribute,
+  BufferGeometry,
+  DefaultLoadingManager,
+  FileLoader,
+  Float32BufferAttribute,
+  LoaderUtils,
+  Mesh,
+  MeshPhongMaterial,
+  Vector3,
+  VertexColors
+} from "three";
 
-  STLLoader.prototype = {
-    constructor: THREE.STLLoader,
+var STLLoader = function(manager) {
+  this.manager = manager !== undefined ? manager : DefaultLoadingManager;
+};
 
-    setRequestHeader: function(requestHeader) {
-      this.requestHeader = requestHeader;
-    },
+STLLoader.prototype = {
+  constructor: STLLoader,
 
-    setWithCredentials: function(withCredentials) {
-      this.withCredentials = withCredentials;
-    },
+  load: function(url, onLoad, onProgress, onError) {
+    var scope = this;
 
-    load: function(url, onLoad, onProgress, onError) {
-      var scope = this;
+    var loader = new FileLoader(scope.manager);
 
-      var loader = new THREE.FileLoader(scope.manager);
-      loader.setResponseType("arraybuffer");
+    if (scope.requestHeader) loader.setRequestHeader(scope.requestHeader);
+    if (scope.withCredentials) loader.setWithCredentials(scope.withCredentials);
 
-      if (scope.requestHeader) loader.setRequestHeader(scope.requestHeader);
-      if (scope.withCredentials) loader.setWithCredentials(scope.withCredentials);
-
-      loader.load(
-        url,
-        function(text) {
+    loader.setPath(scope.path);
+    loader.setResponseType("arraybuffer");
+    loader.load(
+      url,
+      function(text) {
+        try {
           onLoad(scope.parse(text));
-        },
-        onProgress,
-        onError
-      );
-    },
-
-    parse: function(data) {
-      var isBinary = function() {
-        var expect, face_size, n_faces, reader;
-        reader = new DataView(binData);
-        face_size = (32 / 8) * 3 + (32 / 8) * 3 * 3 + 16 / 8;
-        n_faces = reader.getUint32(80, true);
-        expect = 80 + 32 / 8 + n_faces * face_size;
-
-        if (expect === reader.byteLength) {
-          return true;
+        } catch (exception) {
+          if (onError) {
+            onError(exception);
+          }
         }
+      },
+      onProgress,
+      onError
+    );
+  },
 
-        // An ASCII STL data must begin with 'solid ' as the first six bytes.
-        // However, ASCII STLs lacking the SPACE after the 'd' are known to be
-        // plentiful.  So, check the first 5 bytes for 'solid'.
+  setRequestHeader: function(requestHeader) {
+    this.requestHeader = requestHeader;
+    return this;
+  },
 
-        // US-ASCII ordinal values for 's', 'o', 'l', 'i', 'd'
-        var solid = [115, 111, 108, 105, 100];
+  setWithCredentials: function(withCredentials) {
+    this.withCredentials = withCredentials;
+    return this;
+  },
 
-        for (var i = 0; i < 5; i++) {
-          // If solid[ i ] does not match the i-th byte, then it is not an
-          // ASCII STL; hence, it is binary and return true.
+  setPath: function(value) {
+    this.path = value;
+    return this;
+  },
 
-          if (solid[i] != reader.getUint8(i, false)) return true;
-        }
+  parse: function(data) {
+    function isBinary(data) {
+      var expect, face_size, n_faces, reader;
+      reader = new DataView(data);
+      face_size = (32 / 8) * 3 + (32 / 8) * 3 * 3 + 16 / 8;
+      n_faces = reader.getUint32(80, true);
+      expect = 80 + 32 / 8 + n_faces * face_size;
 
-        // First 5 bytes read "solid"; declare it to be an ASCII STL
-        return false;
-      };
+      if (expect === reader.byteLength) {
+        return true;
+      }
 
-      var binData = this.ensureBinary(data);
+      // An ASCII STL data must begin with 'solid ' as the first six bytes.
+      // However, ASCII STLs lacking the SPACE after the 'd' are known to be
+      // plentiful.  So, check the first 5 bytes for 'solid'.
 
-      return isBinary()
-        ? this.parseBinary(binData)
-        : this.parseASCII(this.ensureString(data));
-    },
+      // Several encodings, such as UTF-8, precede the text with up to 5 bytes:
+      // https://en.wikipedia.org/wiki/Byte_order_mark#Byte_order_marks_by_encoding
+      // Search for "solid" to start anywhere after those prefixes.
 
-    parseBinary: function(data) {
+      // US-ASCII ordinal values for 's', 'o', 'l', 'i', 'd'
+
+      var solid = [115, 111, 108, 105, 100];
+
+      for (var off = 0; off < 5; off++) {
+        // If "solid" text is matched to the current offset, declare it to be an ASCII STL.
+
+        if (matchDataViewAt(solid, reader, off)) return false;
+      }
+
+      // Couldn't find "solid" text at the beginning; it is binary STL.
+
+      return true;
+    }
+
+    function matchDataViewAt(query, reader, offset) {
+      // Check if each byte in query matches the corresponding byte from the current offset
+
+      for (var i = 0, il = query.length; i < il; i++) {
+        if (query[i] !== reader.getUint8(offset + i, false)) return false;
+      }
+
+      return true;
+    }
+
+    function parseBinary(data) {
       var reader = new DataView(data);
       var faces = reader.getUint32(80, true);
 
@@ -135,7 +168,7 @@ module.exports = function(THREE) {
       var dataOffset = 84;
       var faceLength = 12 * 4 + 2;
 
-      var geometry = new THREE.BufferGeometry();
+      var geometry = new BufferGeometry();
 
       var vertices = [];
       var normals = [];
@@ -179,100 +212,129 @@ module.exports = function(THREE) {
 
       geometry.addAttribute(
         "position",
-        new THREE.BufferAttribute(new Float32Array(vertices), 3)
+        new BufferAttribute(new Float32Array(vertices), 3)
       );
       geometry.addAttribute(
         "normal",
-        new THREE.BufferAttribute(new Float32Array(normals), 3)
+        new BufferAttribute(new Float32Array(normals), 3)
       );
 
       if (hasColors) {
         geometry.addAttribute(
           "color",
-          new THREE.BufferAttribute(new Float32Array(colors), 3)
+          new BufferAttribute(new Float32Array(colors), 3)
         );
         geometry.hasColors = true;
         geometry.alpha = alpha;
       }
 
       return geometry;
-    },
+    }
 
-    parseASCII: function(data) {
-      var geometry,
-        length,
-        patternFace,
-        patternNormal,
-        patternVertex,
-        result,
-        text;
-      geometry = new THREE.BufferGeometry();
-      patternFace = /facet([\s\S]*?)endfacet/g;
+    function parseASCII(data) {
+      var geometry = new BufferGeometry();
+      var patternFace = /facet([\s\S]*?)endfacet/g;
+      var faceCounter = 0;
+
+      var patternFloat = /[\s]+([+-]?(?:\d*)(?:\.\d*)?(?:[eE][+-]?\d+)?)/
+        .source;
+      var patternVertex = new RegExp(
+        "vertex" + patternFloat + patternFloat + patternFloat,
+        "g"
+      );
+      var patternNormal = new RegExp(
+        "normal" + patternFloat + patternFloat + patternFloat,
+        "g"
+      );
 
       var vertices = [];
       var normals = [];
 
-      var normal = new THREE.Vector3();
+      var normal = new Vector3();
+
+      var result;
 
       while ((result = patternFace.exec(data)) !== null) {
-        text = result[0];
-        patternNormal = /normal[\s]+([\-+]?[0-9]+\.?[0-9]*([eE][\-+]?[0-9]+)?)+[\s]+([\-+]?[0-9]*\.?[0-9]+([eE][\-+]?[0-9]+)?)+[\s]+([\-+]?[0-9]*\.?[0-9]+([eE][\-+]?[0-9]+)?)+/g;
+        var vertexCountPerFace = 0;
+        var normalCountPerFace = 0;
+
+        var text = result[0];
 
         while ((result = patternNormal.exec(text)) !== null) {
           normal.x = parseFloat(result[1]);
-          normal.y = parseFloat(result[3]);
-          normal.z = parseFloat(result[5]);
+          normal.y = parseFloat(result[2]);
+          normal.z = parseFloat(result[3]);
+          normalCountPerFace++;
         }
-
-        patternVertex = /vertex[\s]+([\-+]?[0-9]+\.?[0-9]*([eE][\-+]?[0-9]+)?)+[\s]+([\-+]?[0-9]*\.?[0-9]+([eE][\-+]?[0-9]+)?)+[\s]+([\-+]?[0-9]*\.?[0-9]+([eE][\-+]?[0-9]+)?)+/g;
 
         while ((result = patternVertex.exec(text)) !== null) {
           vertices.push(
             parseFloat(result[1]),
-            parseFloat(result[3]),
-            parseFloat(result[5])
+            parseFloat(result[2]),
+            parseFloat(result[3])
           );
           normals.push(normal.x, normal.y, normal.z);
+          vertexCountPerFace++;
         }
+
+        // every face have to own ONE valid normal
+
+        if (normalCountPerFace !== 1) {
+          console.error(
+            "THREE.STLLoader: Something isn't right with the normal of face number " +
+              faceCounter
+          );
+        }
+
+        // each face have to own THREE valid vertices
+
+        if (vertexCountPerFace !== 3) {
+          console.error(
+            "THREE.STLLoader: Something isn't right with the vertices of face number " +
+              faceCounter
+          );
+        }
+
+        faceCounter++;
       }
 
       geometry.addAttribute(
         "position",
-        new THREE.BufferAttribute(new Float32Array(vertices), 3)
+        new Float32BufferAttribute(vertices, 3)
       );
-      geometry.addAttribute(
-        "normal",
-        new THREE.BufferAttribute(new Float32Array(normals), 3)
-      );
+      geometry.addAttribute("normal", new Float32BufferAttribute(normals, 3));
 
       return geometry;
-    },
+    }
 
-    ensureString: function(buf) {
-      if (typeof buf !== "string") {
-        var array_buffer = new Uint8Array(buf);
-        var strArray = [];
-        for (var i = 0; i < buf.byteLength; i++) {
-          strArray.push(String.fromCharCode(array_buffer[i])); // implicitly assumes little-endian
-        }
-        return strArray.join("");
-      } else {
-        return buf;
+    function ensureString(buffer) {
+      if (typeof buffer !== "string") {
+        return LoaderUtils.decodeText(new Uint8Array(buffer));
       }
-    },
 
-    ensureBinary: function(buf) {
-      if (typeof buf === "string") {
-        var array_buffer = new Uint8Array(buf.length);
-        for (var i = 0; i < buf.length; i++) {
-          array_buffer[i] = buf.charCodeAt(i) & 0xff; // implicitly assumes little-endian
+      return buffer;
+    }
+
+    function ensureBinary(buffer) {
+      if (typeof buffer === "string") {
+        var array_buffer = new Uint8Array(buffer.length);
+        for (var i = 0; i < buffer.length; i++) {
+          array_buffer[i] = buffer.charCodeAt(i) & 0xff; // implicitly assumes little-endian
         }
         return array_buffer.buffer || array_buffer;
       } else {
-        return buf;
+        return buffer;
       }
     }
-  };
 
-  return STLLoader;
+    // start
+
+    var binData = ensureBinary(data);
+
+    return isBinary(binData)
+      ? parseBinary(binData)
+      : parseASCII(ensureString(data));
+  }
 };
+
+export default STLLoader;
