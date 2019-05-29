@@ -29,39 +29,33 @@
  *  var mesh = new Mesh( geometry, material );
  */
 
-import {
-  BufferAttribute,
-  BufferGeometry,
-  DefaultLoadingManager,
-  FileLoader,
-  Float32BufferAttribute,
-  LoaderUtils,
-  Mesh,
-  MeshPhongMaterial,
-  Vector3,
-  VertexColors
-} from "three";
+import { Vector3 } from 'three/src/math/Vector3';
+import { BufferAttribute, Float32BufferAttribute } from 'three/src/core/BufferAttribute';
+import { BufferGeometry } from 'three/src/core/BufferGeometry';
+import { DefaultLoadingManager } from 'three/src/loaders/LoadingManager';
+import { FileLoader } from 'three/src/loaders/FileLoader';
+import { LoaderUtils } from 'three/src/loaders/LoaderUtils';
 
-var STLLoader = function(manager) {
+const STLLoader = (manager) => {
   this.manager = manager !== undefined ? manager : DefaultLoadingManager;
 };
 
 STLLoader.prototype = {
   constructor: STLLoader,
 
-  load: function(url, onLoad, onProgress, onError) {
-    var scope = this;
+  load(url, onLoad, onProgress, onError) {
+    const scope = this;
 
-    var loader = new FileLoader(scope.manager);
+    const loader = new FileLoader(scope.manager);
 
     if (scope.requestHeader) loader.setRequestHeader(scope.requestHeader);
     if (scope.withCredentials) loader.setWithCredentials(scope.withCredentials);
 
     loader.setPath(scope.path);
-    loader.setResponseType("arraybuffer");
+    loader.setResponseType('arraybuffer');
     loader.load(
       url,
-      function(text) {
+      (text) => {
         try {
           onLoad(scope.parse(text));
         } catch (exception) {
@@ -71,28 +65,29 @@ STLLoader.prototype = {
         }
       },
       onProgress,
-      onError
+      onError,
     );
   },
 
-  setRequestHeader: function(requestHeader) {
+  setRequestHeader(requestHeader) {
     this.requestHeader = requestHeader;
     return this;
   },
 
-  setWithCredentials: function(withCredentials) {
+  setWithCredentials(withCredentials) {
     this.withCredentials = withCredentials;
     return this;
   },
 
-  setPath: function(value) {
+  setPath(value) {
     this.path = value;
     return this;
   },
 
-  parse: function(data) {
+  parse(data) {
     function isBinary(data) {
-      var expect, face_size, n_faces, reader;
+      let expect; let face_size; let n_faces; let
+        reader;
       reader = new DataView(data);
       face_size = (32 / 8) * 3 + (32 / 8) * 3 * 3 + 16 / 8;
       n_faces = reader.getUint32(80, true);
@@ -112,9 +107,9 @@ STLLoader.prototype = {
 
       // US-ASCII ordinal values for 's', 'o', 'l', 'i', 'd'
 
-      var solid = [115, 111, 108, 105, 100];
+      const solid = [115, 111, 108, 105, 100];
 
-      for (var off = 0; off < 5; off++) {
+      for (let off = 0; off < 5; off++) {
         // If "solid" text is matched to the current offset, declare it to be an ASCII STL.
 
         if (matchDataViewAt(solid, reader, off)) return false;
@@ -128,7 +123,7 @@ STLLoader.prototype = {
     function matchDataViewAt(query, reader, offset) {
       // Check if each byte in query matches the corresponding byte from the current offset
 
-      for (var i = 0, il = query.length; i < il; i++) {
+      for (let i = 0, il = query.length; i < il; i++) {
         if (query[i] !== reader.getUint8(offset + i, false)) return false;
       }
 
@@ -136,24 +131,25 @@ STLLoader.prototype = {
     }
 
     function parseBinary(data) {
-      var reader = new DataView(data);
-      var faces = reader.getUint32(80, true);
+      const reader = new DataView(data);
+      const faces = reader.getUint32(80, true);
 
-      var r,
-        g,
-        b,
-        hasColors = false,
-        colors;
-      var defaultR, defaultG, defaultB, alpha;
+      let r;
+      let g;
+      let b;
+      let hasColors = false;
+      let colors;
+      let defaultR; let defaultG; let defaultB; let
+        alpha;
 
       // process STL header
       // check for default color in header ("COLOR=rgba" sequence).
 
-      for (var index = 0; index < 80 - 10; index++) {
+      for (let index = 0; index < 80 - 10; index++) {
         if (
-          reader.getUint32(index, false) == 0x434f4c4f /*COLO*/ &&
-          reader.getUint8(index + 4) == 0x52 /*'R'*/ &&
-          reader.getUint8(index + 5) == 0x3d /*'='*/
+          reader.getUint32(index, false) == 0x434f4c4f
+          && /* COLO */ reader.getUint8(index + 4) == 0x52
+          && /* 'R' */ reader.getUint8(index + 5) == 0x3d /* '=' */
         ) {
           hasColors = true;
           colors = [];
@@ -165,22 +161,22 @@ STLLoader.prototype = {
         }
       }
 
-      var dataOffset = 84;
-      var faceLength = 12 * 4 + 2;
+      const dataOffset = 84;
+      const faceLength = 12 * 4 + 2;
 
-      var geometry = new BufferGeometry();
+      const geometry = new BufferGeometry();
 
-      var vertices = [];
-      var normals = [];
+      const vertices = [];
+      const normals = [];
 
-      for (var face = 0; face < faces; face++) {
-        var start = dataOffset + face * faceLength;
-        var normalX = reader.getFloat32(start, true);
-        var normalY = reader.getFloat32(start + 4, true);
-        var normalZ = reader.getFloat32(start + 8, true);
+      for (let face = 0; face < faces; face++) {
+        const start = dataOffset + face * faceLength;
+        const normalX = reader.getFloat32(start, true);
+        const normalY = reader.getFloat32(start + 4, true);
+        const normalZ = reader.getFloat32(start + 8, true);
 
         if (hasColors) {
-          var packedColor = reader.getUint16(start + 48, true);
+          const packedColor = reader.getUint16(start + 48, true);
 
           if ((packedColor & 0x8000) === 0) {
             // facet has its own unique color
@@ -195,8 +191,8 @@ STLLoader.prototype = {
           }
         }
 
-        for (var i = 1; i <= 3; i++) {
-          var vertexstart = start + i * 12;
+        for (let i = 1; i <= 3; i++) {
+          const vertexstart = start + i * 12;
 
           vertices.push(reader.getFloat32(vertexstart, true));
           vertices.push(reader.getFloat32(vertexstart + 4, true));
@@ -210,20 +206,11 @@ STLLoader.prototype = {
         }
       }
 
-      geometry.addAttribute(
-        "position",
-        new BufferAttribute(new Float32Array(vertices), 3)
-      );
-      geometry.addAttribute(
-        "normal",
-        new BufferAttribute(new Float32Array(normals), 3)
-      );
+      geometry.addAttribute('position', new BufferAttribute(new Float32Array(vertices), 3));
+      geometry.addAttribute('normal', new BufferAttribute(new Float32Array(normals), 3));
 
       if (hasColors) {
-        geometry.addAttribute(
-          "color",
-          new BufferAttribute(new Float32Array(colors), 3)
-        );
+        geometry.addAttribute('color', new BufferAttribute(new Float32Array(colors), 3));
         geometry.hasColors = true;
         geometry.alpha = alpha;
       }
@@ -232,33 +219,26 @@ STLLoader.prototype = {
     }
 
     function parseASCII(data) {
-      var geometry = new BufferGeometry();
-      var patternFace = /facet([\s\S]*?)endfacet/g;
-      var faceCounter = 0;
+      const geometry = new BufferGeometry();
+      const patternFace = /facet([\s\S]*?)endfacet/g;
+      let faceCounter = 0;
 
-      var patternFloat = /[\s]+([+-]?(?:\d*)(?:\.\d*)?(?:[eE][+-]?\d+)?)/
-        .source;
-      var patternVertex = new RegExp(
-        "vertex" + patternFloat + patternFloat + patternFloat,
-        "g"
-      );
-      var patternNormal = new RegExp(
-        "normal" + patternFloat + patternFloat + patternFloat,
-        "g"
-      );
+      const patternFloat = /[\s]+([+-]?(?:\d*)(?:\.\d*)?(?:[eE][+-]?\d+)?)/.source;
+      const patternVertex = new RegExp(`vertex${patternFloat}${patternFloat}${patternFloat}`, 'g');
+      const patternNormal = new RegExp(`normal${patternFloat}${patternFloat}${patternFloat}`, 'g');
 
-      var vertices = [];
-      var normals = [];
+      const vertices = [];
+      const normals = [];
 
-      var normal = new Vector3();
+      const normal = new Vector3();
 
-      var result;
+      let result;
 
       while ((result = patternFace.exec(data)) !== null) {
-        var vertexCountPerFace = 0;
-        var normalCountPerFace = 0;
+        let vertexCountPerFace = 0;
+        let normalCountPerFace = 0;
 
-        var text = result[0];
+        const text = result[0];
 
         while ((result = patternNormal.exec(text)) !== null) {
           normal.x = parseFloat(result[1]);
@@ -268,11 +248,7 @@ STLLoader.prototype = {
         }
 
         while ((result = patternVertex.exec(text)) !== null) {
-          vertices.push(
-            parseFloat(result[1]),
-            parseFloat(result[2]),
-            parseFloat(result[3])
-          );
+          vertices.push(parseFloat(result[1]), parseFloat(result[2]), parseFloat(result[3]));
           normals.push(normal.x, normal.y, normal.z);
           vertexCountPerFace++;
         }
@@ -280,35 +256,26 @@ STLLoader.prototype = {
         // every face have to own ONE valid normal
 
         if (normalCountPerFace !== 1) {
-          console.error(
-            "THREE.STLLoader: Something isn't right with the normal of face number " +
-              faceCounter
-          );
+          console.error(`THREE.STLLoader: Something isn't right with the normal of face number ${faceCounter}`);
         }
 
         // each face have to own THREE valid vertices
 
         if (vertexCountPerFace !== 3) {
-          console.error(
-            "THREE.STLLoader: Something isn't right with the vertices of face number " +
-              faceCounter
-          );
+          console.error(`THREE.STLLoader: Something isn't right with the vertices of face number ${faceCounter}`);
         }
 
         faceCounter++;
       }
 
-      geometry.addAttribute(
-        "position",
-        new Float32BufferAttribute(vertices, 3)
-      );
-      geometry.addAttribute("normal", new Float32BufferAttribute(normals, 3));
+      geometry.addAttribute('position', new Float32BufferAttribute(vertices, 3));
+      geometry.addAttribute('normal', new Float32BufferAttribute(normals, 3));
 
       return geometry;
     }
 
     function ensureString(buffer) {
-      if (typeof buffer !== "string") {
+      if (typeof buffer !== 'string') {
         return LoaderUtils.decodeText(new Uint8Array(buffer));
       }
 
@@ -316,25 +283,22 @@ STLLoader.prototype = {
     }
 
     function ensureBinary(buffer) {
-      if (typeof buffer === "string") {
-        var array_buffer = new Uint8Array(buffer.length);
-        for (var i = 0; i < buffer.length; i++) {
+      if (typeof buffer === 'string') {
+        const array_buffer = new Uint8Array(buffer.length);
+        for (let i = 0; i < buffer.length; i++) {
           array_buffer[i] = buffer.charCodeAt(i) & 0xff; // implicitly assumes little-endian
         }
         return array_buffer.buffer || array_buffer;
-      } else {
-        return buffer;
       }
+      return buffer;
     }
 
     // start
 
-    var binData = ensureBinary(data);
+    const binData = ensureBinary(data);
 
-    return isBinary(binData)
-      ? parseBinary(binData)
-      : parseASCII(ensureString(data));
-  }
+    return isBinary(binData) ? parseBinary(binData) : parseASCII(ensureString(data));
+  },
 };
 
 export default STLLoader;
