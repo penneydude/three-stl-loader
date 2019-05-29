@@ -32,12 +32,13 @@
 import { Vector3 } from 'three/src/math/Vector3';
 import { BufferAttribute, Float32BufferAttribute } from 'three/src/core/BufferAttribute';
 import { BufferGeometry } from 'three/src/core/BufferGeometry';
-import { DefaultLoadingManager } from 'three/src/loaders/LoadingManager';
+import { DefaultLoadingManager } from 'three';
 import { FileLoader } from 'three/src/loaders/FileLoader';
 import { LoaderUtils } from 'three/src/loaders/LoaderUtils';
 
-const STLLoader = (manager) => {
-  this.manager = manager !== undefined ? manager : DefaultLoadingManager;
+
+var STLLoader = function(manager) {
+  this.manager = (manager !== undefined) ? manager : DefaultLoadingManager;
 };
 
 STLLoader.prototype = {
