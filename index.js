@@ -207,11 +207,11 @@ STLLoader.prototype = {
         }
       }
 
-      geometry.addAttribute('position', new BufferAttribute(new Float32Array(vertices), 3));
-      geometry.addAttribute('normal', new BufferAttribute(new Float32Array(normals), 3));
+      geometry.setAttribute('position', new BufferAttribute(new Float32Array(vertices), 3));
+      geometry.setAttribute('normal', new BufferAttribute(new Float32Array(normals), 3));
 
       if (hasColors) {
-        geometry.addAttribute('color', new BufferAttribute(new Float32Array(colors), 3));
+        geometry.setAttribute('color', new BufferAttribute(new Float32Array(colors), 3));
         geometry.hasColors = true;
         geometry.alpha = alpha;
       }
@@ -269,8 +269,8 @@ STLLoader.prototype = {
         faceCounter++;
       }
 
-      geometry.addAttribute('position', new Float32BufferAttribute(vertices, 3));
-      geometry.addAttribute('normal', new Float32BufferAttribute(normals, 3));
+      geometry.setAttribute('position', new Float32BufferAttribute(vertices, 3));
+      geometry.setAttribute('normal', new Float32BufferAttribute(normals, 3));
 
       return geometry;
     }
